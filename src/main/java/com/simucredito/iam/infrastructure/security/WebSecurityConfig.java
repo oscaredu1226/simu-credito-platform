@@ -59,7 +59,7 @@ public class WebSecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/me").permitAll()
                 .requestMatchers("/api/clients/pre-qualification").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
+                //.requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
                 .anyRequest().authenticated()
