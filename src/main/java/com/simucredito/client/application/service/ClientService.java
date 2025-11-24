@@ -135,51 +135,87 @@ public class ClientService {
     }
 
     public PreQualificationResponseDTO performPreQualification(PreQualificationRequestDTO request) {
-        // Pre-qualification is based only on client data, not property data
-        // Property evaluation happens during simulation
-
+        // Variables de estado
         String bbpStatus = "NOT_ELIGIBLE";
-        String sustainableBonusStatus = "NOT_ELIGIBLE";
+        String sustainableBonusStatus = "REQUIRES_PROPERTY_EVALUATION";
         String integratorBonusStatus = "NOT_ELIGIBLE";
         String techoPropioStatus = "NOT_ELIGIBLE";
-        String recomendacion = "Cliente no elegible para bonos";
+        StringBuilder recomendacion = new StringBuilder();
+        boolean isEligible = false;
 
-        // BBP evaluation based on income and other client criteria
-        if (request.getMonthlyIncome().compareTo(BigDecimal.valueOf(2500)) >= 0 &&
-            request.getFamilyNetIncome().compareTo(BigDecimal.valueOf(3500)) >= 0) {
-            bbpStatus = "ELIGIBLE";
-            recomendacion = "Cliente elegible para BBP";
+        // Constantes
+        final BigDecimal TECHO_PROPIO_MAX_INCOME = new BigDecimal("3715");
+        final BigDecimal MIN_INCOME_FOR_CREDIT = new BigDecimal("1500"); // Umbral referencial del banco
+
+        // --- 1. EVALUACIÓN TECHO PROPIO (Prioridad para ingresos bajos) ---
+        boolean cumpleNoPropiedad = !request.getIsOwnerOfAnotherProperty();
+        boolean cumpleNoApoyo = !request.getHasReceivedPreviousSupport();
+        boolean ingresosBajos = request.getFamilyNetIncome().compareTo(TECHO_PROPIO_MAX_INCOME) <= 0;
+
+        if (ingresosBajos) {
+            if (cumpleNoPropiedad && cumpleNoApoyo) {
+                techoPropioStatus = "ELIGIBLE";
+                isEligible = true;
+                recomendacion.append("✅ **Programa Techo Propio (AVN):**\n")
+                        .append("   ¡Excelentes noticias! Cumples con todos los requisitos para el Bono Familiar Habitacional (BFH). ")
+                        .append("Este es el subsidio más alto del estado (aprox. S/ 44,000) para comprar tu primera vivienda nueva.\n\n");
+            } else {
+                recomendacion.append("⚠️ **Observación Techo Propio:**\n   Tus ingresos califican, pero ");
+                if (!cumpleNoPropiedad) recomendacion.append("figuras como propietario de otra vivienda. ");
+                if (!cumpleNoApoyo) recomendacion.append("ya has recibido apoyo del Estado anteriormente. ");
+                recomendacion.append("Esto te impide acceder al BFH gratuito.\n\n");
+            }
         }
 
-        // Integrator bonus evaluation
-        if (request.getAppliesForIntegratorBonus() &&
-            request.getAge() >= 18 && request.getAge() <= 35 &&
-            request.getMonthlyIncome().compareTo(BigDecimal.valueOf(1500)) >= 0) {
+        // --- 2. EVALUACIÓN MIVIVIENDA / CRÉDITO HIPOTECARIO ---
+        // Si gana más del límite de TP, o si gana menos pero quiere una casa más cara (evaluamos capacidad general)
+        if (!"ELIGIBLE".equals(techoPropioStatus)) {
+            if (request.getFamilyNetIncome().compareTo(MIN_INCOME_FOR_CREDIT) >= 0) {
+                isEligible = true; // Es sujeto de crédito
+                recomendacion.append("🏦 **Nuevo Crédito MiVivienda:**\n");
+
+                if (cumpleNoPropiedad) {
+                    bbpStatus = "ELIGIBLE";
+                    recomendacion.append("   Calificas para un crédito hipotecario con el **Bono del Buen Pagador (BBP)**. ")
+                            .append("Este bono reducirá tu cuota inicial o el monto total a financiar. ")
+                            .append("Puedes buscar viviendas de mayor valor (hasta S/ 488,800 aprox).\n\n");
+                } else {
+                    recomendacion.append("   Cuentas con capacidad para un crédito hipotecario MiVivienda. ")
+                            .append("Sin embargo, al tener propiedad registrada, no aplicas al bono (BBP), ")
+                            .append("pero sí puedes beneficiarte de las tasas preferenciales del fondo.\n\n");
+                }
+            } else {
+                recomendacion.append("📉 **Análisis Financiero:**\n")
+                        .append("   Tus ingresos reportados podrían ser insuficientes para calificar a un crédito hipotecario bancario en este momento. ")
+                        .append("Te sugerimos sumar ingresos con un cónyuge o aval para mejorar tu perfil.\n\n");
+            }
+        }
+
+        // --- 3. BONOS ADICIONALES (Acumulables) ---
+        boolean esAdultoMayor = request.getAge() >= 60;
+        boolean tieneDiscapacidad = request.getConadisCardNumber() != null && !request.getConadisCardNumber().trim().isEmpty();
+
+        if (isEligible && (esAdultoMayor || tieneDiscapacidad)) {
             integratorBonusStatus = "ELIGIBLE";
-            recomendacion += " y Bono Integrador";
+            recomendacion.append("➕ **Bono Integrador:**\n   ");
+            if (esAdultoMayor) recomendacion.append("Por ser adulto mayor (60+ años), ");
+            if (tieneDiscapacidad) recomendacion.append("Por contar con carnet de CONADIS, ");
+            recomendacion.append("accedes a un descuento adicional sobre el valor de la vivienda. ¡Asegúrate de mencionarlo al banco!\n\n");
         }
 
-        // Techo Propio evaluation
-        if (!request.getIsOwnerOfAnotherProperty() &&
-            !request.getHasReceivedPreviousSupport() &&
-            request.getMonthlyIncome().compareTo(BigDecimal.valueOf(1200)) >= 0) {
-            techoPropioStatus = "ELIGIBLE";
-            recomendacion += " y Techo Propio";
+        // --- 4. BONO VERDE (Informativo) ---
+        if (isEligible) {
+            recomendacion.append("🌱 **Tip de Ahorro:**\n   Si eliges un proyecto certificado como 'MiVivienda Verde' (Sostenible), ")
+                    .append("recibirás un bono adicional de aproximadamente S/ 5,000 y una tasa de interés preferencial.");
         }
-
-        // Sustainable bonus evaluation (requires additional property criteria)
-        sustainableBonusStatus = "REQUIRES_PROPERTY_EVALUATION";
-
-        boolean isEligible = "ELIGIBLE".equals(bbpStatus) ||
-                           "ELIGIBLE".equals(integratorBonusStatus) ||
-                           "ELIGIBLE".equals(techoPropioStatus);
 
         return PreQualificationResponseDTO.builder()
+                .clientId(null)
                 .bbpStatus(bbpStatus)
                 .sustainableBonusStatus(sustainableBonusStatus)
                 .integratorBonusStatus(integratorBonusStatus)
                 .techoPropioStatus(techoPropioStatus)
-                .recomendacion(recomendacion)
+                .recomendacion(recomendacion.toString().trim())
                 .isEligible(isEligible)
                 .build();
     }
