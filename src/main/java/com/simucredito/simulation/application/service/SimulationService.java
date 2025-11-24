@@ -442,12 +442,35 @@ public class SimulationService {
                 .totalInterest(simulation.getTotalInterest())
                 .build();
 
+        SimulationResponseDTO.InputParameters inputs = SimulationResponseDTO.InputParameters.builder()
+                .currency(simulation.getCurrency())
+                .termYears(simulation.getTermYears())
+                .interestRate(simulation.getInterestRate())
+                .interestRateType(simulation.getInterestRateType())
+                .interestRatePeriod(simulation.getInterestRatePeriod())
+                .interestRateCapitalization(simulation.getInterestRateCapitalization())
+                .opportunityCostRate(simulation.getOpportunityCostRate())
+                .opportunityCostType(simulation.getOpportunityCostType())
+                .opportunityCostPeriod(simulation.getOpportunityCostPeriod())
+                .opportunityCostCapitalization(simulation.getOpportunityCostCapitalization())
+                .gracePeriodType(simulation.getGracePeriodType())
+                .gracePeriodDurationMonths(simulation.getGracePeriodDurationMonths())
+                .monthlyCommissions(simulation.getMonthlyCommissions())
+                .administrationCosts(simulation.getAdministrationCosts())
+                .statementDelivery(simulation.getStatementDelivery())
+                .desgravamenEnabled(simulation.getDesgravamenEnabled())
+                .desgravamenRate(simulation.getDesgravamenRate())
+                .propertyInsuranceEnabled(simulation.getPropertyInsuranceEnabled())
+                .propertyInsuranceRate(simulation.getPropertyInsuranceRate())
+                .build();
+
         SimulationResponseDTO dto = SimulationResponseDTO.builder()
                 .simulationId(simulation.getId().toString())
                 .clientInfo(clientInfo)
                 .propertyInfo(propertyInfo)
                 .summary(summary)
                 .keyIndicators(keyIndicators)
+                .inputs(inputs)
                 .calculationMethod("French Method (Ordinary Annuity)")
                 .generatedAt(simulation.getCreatedAt())
                 .build();
@@ -456,22 +479,36 @@ public class SimulationService {
             List<SimulationResponseDTO.Payment> allPayments = simulation.getAmortizationSchedule()
                     .stream()
                     .sorted((a, b) -> Integer.compare(a.getPeriodNumber(), b.getPeriodNumber()))
-                    .map(entry -> SimulationResponseDTO.Payment.builder()
-                            .paymentNumber(entry.getPeriodNumber())
-                            .tem(entry.getTem())
-                            .gracePeriod(entry.getGracePeriod())
-                            .initialBalance(entry.getInitialBalance())
-                            .interest(entry.getInterest())
-                            .payment(entry.getPayment())
-                            .principal(entry.getPrincipal())
-                            .lifeInsurance(entry.getLifeInsurance())
-                            .propertyInsurance(entry.getPropertyInsurance())
-                            .commissions(entry.getCommissions())
-                            .adminCosts(entry.getAdminCosts())
-                            .deliveryCosts(entry.getDeliveryCosts())
-                            .finalBalance(entry.getFinalBalance())
-                            .cashFlow(entry.getCashFlow())
-                            .build())
+                    .map(entry -> {
+                        // Lógica para determinar el texto del periodo de gracia
+                        String graceDesc = "Sin gracia";
+                        if (Boolean.TRUE.equals(entry.getIsGracePeriod())) {
+                            String type = simulation.getGracePeriodType();
+                            if ("total".equalsIgnoreCase(type)) {
+                                graceDesc = "Total";
+                            } else if ("partial".equalsIgnoreCase(type)) {
+                                graceDesc = "Parcial";
+                            }
+                        }
+
+                        return SimulationResponseDTO.Payment.builder()
+                                .paymentNumber(entry.getPeriodNumber())
+                                .tem(entry.getTem())
+                                .gracePeriod(entry.getGracePeriod())
+                                .gracePeriodDescription(graceDesc)
+                                .initialBalance(entry.getInitialBalance())
+                                .interest(entry.getInterest())
+                                .payment(entry.getPayment())
+                                .principal(entry.getPrincipal())
+                                .lifeInsurance(entry.getLifeInsurance())
+                                .propertyInsurance(entry.getPropertyInsurance())
+                                .commissions(entry.getCommissions())
+                                .adminCosts(entry.getAdminCosts())
+                                .deliveryCosts(entry.getDeliveryCosts())
+                                .finalBalance(entry.getFinalBalance())
+                                .cashFlow(entry.getCashFlow())
+                                .build();
+                    })
                     .collect(Collectors.toList());
 
             int totalPayments = allPayments.size();

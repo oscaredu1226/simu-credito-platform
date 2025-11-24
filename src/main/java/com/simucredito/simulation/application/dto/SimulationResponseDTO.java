@@ -23,6 +23,7 @@ public class SimulationResponseDTO {
     private AmortizationSchedule amortizationSchedule;
     private String calculationMethod;
     private LocalDateTime generatedAt;
+    private InputParameters inputs;
 
     @Data
     @Builder
@@ -87,6 +88,7 @@ public class SimulationResponseDTO {
         private Integer paymentNumber;
         private BigDecimal tem;
         private Integer gracePeriod;
+        private String gracePeriodDescription;
         private BigDecimal initialBalance;
         private BigDecimal interest;
         private BigDecimal payment;
@@ -98,5 +100,31 @@ public class SimulationResponseDTO {
         private BigDecimal deliveryCosts;
         private BigDecimal finalBalance;
         private BigDecimal cashFlow;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InputParameters {
+        private String currency;
+        private Integer termYears;
+        private BigDecimal interestRate;
+        private String interestRateType;
+        private String interestRatePeriod;
+        private String interestRateCapitalization;
+        private BigDecimal opportunityCostRate;
+        private String opportunityCostType;
+        private String opportunityCostPeriod;
+        private String opportunityCostCapitalization;
+        private String gracePeriodType;
+        private Integer gracePeriodDurationMonths;
+        private BigDecimal monthlyCommissions;
+        private BigDecimal administrationCosts;
+        private String statementDelivery;
+        private Boolean desgravamenEnabled;
+        private BigDecimal desgravamenRate;
+        private Boolean propertyInsuranceEnabled;
+        private BigDecimal propertyInsuranceRate;
     }
 }
