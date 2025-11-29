@@ -14,20 +14,23 @@ import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 @OpenAPIDefinition(
-    info = @Info(
-        title = "SimuCredito API",
-        version = "1.0",
-        description = "API for SimuCredito - Real Estate Credit Simulation Platform"
-    ),
-    servers = @Server(url = "http://localhost:8080", description = "Development server"),
-    security = @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth")
+        info = @Info(
+                title = "SimuCredito API",
+                version = "1.0",
+                description = "API for SimuCredito - Real Estate Credit Simulation Platform"
+        ),
+        servers = @Server(
+                url = "/",
+                description = "Default server"
+        ),
+        security = @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth")
 )
 @SecurityScheme(
-    name = "bearerAuth",
-    description = "JWT Authentication",
-    scheme = "bearer",
-    type = SecuritySchemeType.HTTP,
-    bearerFormat = "JWT"
+        name = "bearerAuth",
+        description = "JWT Authentication",
+        scheme = "bearer",
+        type = SecuritySchemeType.HTTP,
+        bearerFormat = "JWT"
 )
 public class SimucreditoApplication {
 
@@ -39,13 +42,10 @@ public class SimucreditoApplication {
     public ModelMapper modelMapper() {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration()
-            .setFieldMatchingEnabled(true)
-            .setFieldAccessLevel(Configuration.AccessLevel.PRIVATE);
-
-        // Skip setValue method for GlobalValue mappings to avoid conflicts with multiple getters
-        modelMapper.getConfiguration().setAmbiguityIgnored(true);
+                .setFieldMatchingEnabled(true)
+                .setFieldAccessLevel(Configuration.AccessLevel.PRIVATE)
+                .setAmbiguityIgnored(true);
 
         return modelMapper;
     }
-
 }
