@@ -10,7 +10,9 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,13 +34,28 @@ public class FirebaseStorageService {
     private int tempPhotoExpiryHours;
 
     private Storage getStorage() throws IOException {
-        GoogleCredentials credentials = GoogleCredentials.fromStream(
-            new ClassPathResource(credentialsPath).getInputStream()
-        );
+        GoogleCredentials credentials;
+        InputStream serviceAccount;
+
+        if (credentialsPath != null &&
+                (credentialsPath.startsWith("/") || credentialsPath.matches("^[A-Za-z]:\\\\.*"))) {
+
+            serviceAccount = new FileInputStream(credentialsPath);
+
+        } else {
+            ClassPathResource resource = new ClassPathResource(credentialsPath);
+            if (!resource.exists()) {
+                throw new IOException("Firebase credentials file not found in classpath: " + credentialsPath);
+            }
+            serviceAccount = resource.getInputStream();
+        }
+
+        credentials = GoogleCredentials.fromStream(serviceAccount);
+
         return StorageOptions.newBuilder()
-            .setCredentials(credentials)
-            .build()
-            .getService();
+                .setCredentials(credentials)
+                .build()
+                .getService();
     }
 
     public UploadPhotosResponseDTO uploadPhotos(List<MultipartFile> files, Long userId) throws IOException {
@@ -62,9 +79,9 @@ public class FirebaseStorageService {
             // Create blob info
             BlobId blobId = BlobId.of(bucketName, uniqueFilename);
             BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
-                .setContentType(file.getContentType())
-                .setMetadata(createMetadata(userId, now, expiryTime))
-                .build();
+                    .setContentType(file.getContentType())
+                    .setMetadata(createMetadata(userId, now, expiryTime))
+                    .build();
 
             // Upload file
             try {
@@ -74,14 +91,14 @@ public class FirebaseStorageService {
                 String publicUrl = generatePublicUrl(blob, tempPhotoExpiryHours);
 
                 UploadPhotosResponseDTO.PhotoMetadataDTO metadata = UploadPhotosResponseDTO.PhotoMetadataDTO.builder()
-                    .id(uniqueFilename)
-                    .originalFilename(originalFilename)
-                    .firebaseUrl(publicUrl)
-                    .contentType(file.getContentType())
-                    .size(file.getSize())
-                    .uploadedAt(now)
-                    .expiresAt(expiryTime)
-                    .build();
+                        .id(uniqueFilename)
+                        .originalFilename(originalFilename)
+                        .firebaseUrl(publicUrl)
+                        .contentType(file.getContentType())
+                        .size(file.getSize())
+                        .uploadedAt(now)
+                        .expiresAt(expiryTime)
+                        .build();
 
                 uploadedPhotos.add(metadata);
 
@@ -94,10 +111,10 @@ public class FirebaseStorageService {
         }
 
         return UploadPhotosResponseDTO.builder()
-            .photos(uploadedPhotos)
-            .message("Photos uploaded successfully")
-            .expiryTime(expiryTime)
-            .build();
+                .photos(uploadedPhotos)
+                .message("Photos uploaded successfully")
+                .expiryTime(expiryTime)
+                .build();
     }
 
     public void deletePhoto(String photoId) throws IOException {
@@ -116,8 +133,8 @@ public class FirebaseStorageService {
         Storage storage = getStorage();
 
         List<BlobId> blobIds = photoIds.stream()
-            .map(photoId -> BlobId.of(bucketName, photoId))
-            .toList();
+                .map(photoId -> BlobId.of(bucketName, photoId))
+                .toList();
 
         List<Boolean> results = storage.delete(blobIds);
 
@@ -154,13 +171,13 @@ public class FirebaseStorageService {
         // Create blob info
         BlobId blobId = BlobId.of(bucketName, uniqueFilename);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
-            .setContentType(file.getContentType())
-            .setMetadata(java.util.Map.of(
-                "entityCode", entityCode,
-                "uploadedAt", LocalDateTime.now().toString(),
-                "type", "financial_entity_photo"
-            ))
-            .build();
+                .setContentType(file.getContentType())
+                .setMetadata(java.util.Map.of(
+                        "entityCode", entityCode,
+                        "uploadedAt", LocalDateTime.now().toString(),
+                        "type", "financial_entity_photo"
+                ))
+                .build();
 
         // Upload file
         try {
@@ -202,10 +219,10 @@ public class FirebaseStorageService {
 
     private java.util.Map<String, String> createMetadata(Long userId, LocalDateTime uploadedAt, LocalDateTime expiresAt) {
         return java.util.Map.of(
-            "userId", userId.toString(),
-            "uploadedAt", uploadedAt.toString(),
-            "expiresAt", expiresAt.toString(),
-            "temp", "true"
+                "userId", userId.toString(),
+                "uploadedAt", uploadedAt.toString(),
+                "expiresAt", expiresAt.toString(),
+                "temp", "true"
         );
     }
 }
