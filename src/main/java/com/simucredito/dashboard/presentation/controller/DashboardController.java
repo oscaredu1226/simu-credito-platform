@@ -27,9 +27,9 @@ public class DashboardController {
     @GetMapping("/metrics")
     @Operation(summary = "Get dashboard metrics", description = "Retrieve comprehensive dashboard metrics")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Metrics retrieved successfully",
-            content = @Content(mediaType = "application/json",
-                schema = @Schema(implementation = DashboardMetricsDTO.class)))
+            @ApiResponse(responseCode = "200", description = "Metrics retrieved successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = DashboardMetricsDTO.class)))
     })
     public ResponseEntity<DashboardMetricsDTO> getMetrics() {
         DashboardMetricsDTO metrics = dashboardService.getDashboardMetrics();
@@ -39,13 +39,25 @@ public class DashboardController {
     @GetMapping("/recent-activity")
     @Operation(summary = "Get recent activity", description = "Retrieve recent system activities")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Recent activities retrieved successfully",
-            content = @Content(mediaType = "application/json",
-                schema = @Schema(implementation = RecentActivityDTO.class)))
+            @ApiResponse(responseCode = "200", description = "Recent activities retrieved successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RecentActivityDTO.class)))
     })
     public ResponseEntity<List<RecentActivityDTO>> getRecentActivity(
             @RequestParam(defaultValue = "20") int limit) {
         List<RecentActivityDTO> activities = dashboardService.getRecentActivity(limit);
         return ResponseEntity.ok(activities);
+    }
+
+    @GetMapping("/activity")
+    @Operation(summary = "Get simulation activity", description = "Retrieve simulation counts grouped by day for charts")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Activity data retrieved successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RecentActivityDTO.class)))
+    })
+    public ResponseEntity<List<com.simucredito.dashboard.application.dto.SimulationActivityDTO>> getSimulationActivity(
+            @RequestParam(defaultValue = "week") String period) {
+        return ResponseEntity.ok(dashboardService.getSimulationActivity(period));
     }
 }
