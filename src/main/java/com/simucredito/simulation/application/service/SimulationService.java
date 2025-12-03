@@ -7,7 +7,6 @@ import com.simucredito.iam.domain.repository.UserRepository;
 import com.simucredito.property.application.service.PropertyService;
 import com.simucredito.simulation.application.dto.CreateSimulationRequestDTO;
 import com.simucredito.simulation.application.dto.SimulationResponseDTO;
-import com.simucredito.simulation.application.dto.AmortizationEntryDTO;
 import com.simucredito.simulation.domain.model.AmortizationSchedule;
 import com.simucredito.simulation.domain.model.Simulation;
 import com.simucredito.simulation.domain.repository.SimulationRepository;
@@ -276,13 +275,13 @@ public class SimulationService {
         // Add insurance costs - with null checks
         if (request.getFinancingDetails().getInsurance() != null) {
             if (request.getFinancingDetails().getInsurance().getDesgravamen() != null &&
-                Boolean.TRUE.equals(request.getFinancingDetails().getInsurance().getDesgravamen().getEnabled())) {
+                    Boolean.TRUE.equals(request.getFinancingDetails().getInsurance().getDesgravamen().getEnabled())) {
                 costs = costs.add(request.getCalculatedValues().getFinancingAmount()
                         .multiply(request.getFinancingDetails().getInsurance().getDesgravamen().getRate()));
             }
 
             if (request.getFinancingDetails().getInsurance().getPropertyInsurance() != null &&
-                Boolean.TRUE.equals(request.getFinancingDetails().getInsurance().getPropertyInsurance().getEnabled())) {
+                    Boolean.TRUE.equals(request.getFinancingDetails().getInsurance().getPropertyInsurance().getEnabled())) {
                 costs = costs.add(request.getFinancingDetails().getInsurance().getPropertyInsurance().getValue()
                         .multiply(request.getFinancingDetails().getInsurance().getPropertyInsurance().getRate()));
             }
@@ -483,6 +482,7 @@ public class SimulationService {
 
         SimulationResponseDTO.InputParameters inputs = SimulationResponseDTO.InputParameters.builder()
                 .currency(simulation.getCurrency())
+                .usdValue(simulation.getUsdValue())
                 .termYears(simulation.getTermYears())
                 .interestRate(simulation.getInterestRate())
                 .interestRateType(simulation.getInterestRateType())
